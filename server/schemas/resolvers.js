@@ -1,5 +1,5 @@
 const { AuthenticationError } = require("apollo-server-express");
-const { User } = require("../models");
+const { User, Book } = require("../models");
 const { signToken } = require("../utils/auth");
 
 const resolvers = {
@@ -20,26 +20,62 @@ const resolvers = {
     addUser: async (parent, args) => {
       const user = await User.create(args);
       const token = signToken(user);
-
       return { token, user };
     },
 
     login: async (parent, { email, password }) => {
       const user = await User.findOne({ email });
-      const correctPassword = await user.isCorrectPassword(password);
 
       if (!user) {
         throw new AuthenticationError("Incorrect Email");
       }
 
+      const correctPassword = await user.isCorrectPassword(password);
+
       if (!correctPassword) {
         throw new AuthenticationError("Incorrect Password");
       }
+
+      const token = signToken(user);
+
+      return { token, user };
     },
 
-    saveBook: {},
+    saveBook: async (parent, { userId, bookId }, context) => {
+      if (context.user) {
+        return User.findOneAndUpdate(
+          { _id: userId },
+          {
+            $addToSet: {
+              savedBooks: { commentText, commentAuthor: context.user.username },
+            },
+          },
+          {
+            new: true,
+            runValidators: true,
+          }
+        );
+      }
+      throw new AuthenticationError('You need to be logged in!');
+    },
 
-    removeBook: {},
+    removeBook: async (parent, { userId, bookId }, context) => {
+      if (context.user) {
+        return User.findOneAndUpdate(
+          { _id: userId },
+          {
+            $pull: {
+              savedBooks: {
+                _id: bookId,
+              },
+            },
+          },
+          { new: true }
+        );
+      }
+
+      throw new AuthenticationError("You need to be logged in!");
+    },
   },
 };
 
