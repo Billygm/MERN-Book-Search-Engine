@@ -24,17 +24,17 @@ const resolvers = {
       return { token, user };
     },
 
-    login: async (parent, args) => {
-        const user = await User.findOne(args.email);
-        const correctPassword = await user.isCorrectPassword(password);
+    login: async (parent, { email, password }) => {
+      const user = await User.findOne({ email });
+      const correctPassword = await user.isCorrectPassword(password);
 
-        if (!user){
-            throw new AuthenticationError("Incorrect Email");
-        }
+      if (!user) {
+        throw new AuthenticationError("Incorrect Email");
+      }
 
-        if (!correctPassword) {
-            throw new AuthenticationError("Incorrect Password")
-        }
+      if (!correctPassword) {
+        throw new AuthenticationError("Incorrect Password");
+      }
     },
 
     saveBook: {},
